@@ -8,8 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class ClientRepositoryImpl constructor(
+class ClientRepositoryImpl @Inject constructor(
     private val clientDao: ClientDao,
 ): ClientRepository {
     override fun clientList(): Flow<List<Client>> {
