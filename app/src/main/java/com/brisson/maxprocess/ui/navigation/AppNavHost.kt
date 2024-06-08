@@ -8,6 +8,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.brisson.maxprocess.ui.screen.detail.ClientDetailRoute
+import com.brisson.maxprocess.ui.screen.list.ClientListRoute
 
 @Composable
 fun AppNavHost(
@@ -21,7 +23,10 @@ fun AppNavHost(
         startDestination = startDestination,
     ) {
         composable(route = NavUtils.CLIENT_LIST_ROUTE) {
-            // TODO: Client list screen
+            ClientListRoute(
+                onNewClient = { NavUtils.navigateToClientDetail(navController) },
+                onClient = { id -> NavUtils.navigateToClientDetail(navController, id) },
+            )
         }
 
         composable(
@@ -33,7 +38,7 @@ fun AppNavHost(
                 },
             )
         ) {
-            // TODO: Client detail screen
+            ClientDetailRoute(onBack = { navController.popBackStack() })
         }
     }
 }

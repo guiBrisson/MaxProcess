@@ -7,8 +7,8 @@ object NavUtils {
     const val CLIENT_ID_ARG = "client_id"
 
     // Screens
-    const val CLIENT_LIST_SCREEN = "client_list"
-    const val CLIENT_DETAIL_SCREEN = "client_detail"
+    private const val CLIENT_LIST_SCREEN = "client_list"
+    private const val CLIENT_DETAIL_SCREEN = "client_detail"
 
     // Routes
     const val CLIENT_LIST_ROUTE = CLIENT_LIST_SCREEN
