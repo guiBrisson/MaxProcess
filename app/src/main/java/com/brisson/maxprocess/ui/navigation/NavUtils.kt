@@ -1,6 +1,7 @@
 package com.brisson.maxprocess.ui.navigation
 
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
 
 object NavUtils {
     // Args
@@ -17,6 +18,6 @@ object NavUtils {
 
     fun navigateToClientDetail(navHostController: NavHostController, clientId: Long? = -1) {
         val route = CLIENT_DETAIL_ROUTE.replace("{${CLIENT_ID_ARG}}", clientId.toString())
-        navHostController.navigate(route)
+        navHostController.navigate(route, NavOptions.Builder().setLaunchSingleTop(true).build())
     }
 }

@@ -115,7 +115,13 @@ class ClientDetailViewModel @Inject constructor(
     }
 
     private fun parseBirthDate(bd: String, onInvalid: (message: String) -> Unit): Date? {
-        val sdf = SimpleDateFormat("ddMMyyyy", Locale.getDefault())
+        val pattern = "ddMMyyyy"
+        if (bd.length != pattern.length) {
+            onInvalid("Data de nascimento inválida (Exemplo: 01/02/2003)")
+            return null
+        }
+
+        val sdf = SimpleDateFormat(pattern, Locale.getDefault())
         sdf.isLenient = false // This ensures strict date validation
 
         try {
@@ -125,14 +131,14 @@ class ClientDetailViewModel @Inject constructor(
             // compare with current date
             val currentDate = Date()
             if (date?.after(currentDate) == true) {
-                onInvalid("Data de aniversário inválida")
+                onInvalid("Data de nascimento inválida")
                 return null
             }
 
             // date parsed successfully
             return date
         } catch (e: ParseException) {
-            onInvalid("Data de aniversário inválida")
+            onInvalid("Data de nascimento inválida")
             return null
         }
     }

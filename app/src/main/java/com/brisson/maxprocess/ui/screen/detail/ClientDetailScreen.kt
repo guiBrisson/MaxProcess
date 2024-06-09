@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -148,9 +149,7 @@ internal fun ClientDetailScreen(
 
         if (screenUiState.isLoading()) {
             LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp),
+                modifier = Modifier.fillMaxWidth().height(1.dp),
                 trackColor = lightStrokeColor,
             )
         } else {
@@ -165,7 +164,7 @@ internal fun ClientDetailScreen(
             ) {
                 item {
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
                         icon = Icons.Outlined.Person,
                         contentDescription = "Person icon",
                         unselected = clientName.isEmpty(),
@@ -188,7 +187,7 @@ internal fun ClientDetailScreen(
                 item {
                     val dateMask = MaskVisualTransformation("##/##/####")
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
                         icon = Icons.Outlined.DateRange,
                         contentDescription = "Date icon",
                         unselected = clientBirthDate.isEmpty(),
@@ -216,7 +215,7 @@ internal fun ClientDetailScreen(
                     FormComponent(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 12.dp)
+                            .padding(vertical = 14.dp)
                             .clickable(
                                 interactionSource = interactionSource,
                                 indication = null,
@@ -272,11 +271,45 @@ internal fun ClientDetailScreen(
                 }
 
                 item {
+                    val cpfMask = MaskVisualTransformation("###.###.###-##")
+                    FormComponent(
+                        modifier = Modifier.padding(vertical = 14.dp).fillMaxWidth(),
+                        icon = Icons.Outlined.AccountBox,
+                        contentDescription = "AccountBox icon",
+                        unselected = clientCPF.isEmpty(),
+                    ) {
+                        FormTextField(
+                            label = "CPF",
+                            value = clientCPF,
+                            onValueChange = { if (it.length <= 11) clientCPF = it },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done,
+                            ),
+                            visualTransformation = cpfMask,
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    onEvent(
+                                        ClientDetailEvent.OnMainAction(
+                                            clientName,
+                                            clientCPF,
+                                            clientBirthDate,
+                                            clientUF,
+                                            clientPhones,
+                                        )
+                                    )
+                                }
+                            ),
+                        )
+                    }
+                }
+
+                item {
                     val phoneMask = MaskVisualTransformation("(##) ####-####")
                     val phone9DigitsMask = MaskVisualTransformation("(##) # ####-####")
 
                     FormComponent(
-                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
+                        modifier = Modifier.padding(vertical = 14.dp).fillMaxWidth(),
                         icon = Icons.Outlined.Phone,
                         contentDescription = "Phone icon",
                         verticalAlignment = Alignment.Top,
@@ -351,63 +384,36 @@ internal fun ClientDetailScreen(
                     }
                 }
 
-                item {
-                    val cpfMask = MaskVisualTransformation("###.###.###-##")
-                    FormComponent(
-                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
-                        icon = Icons.Outlined.AccountBox,
-                        contentDescription = "AccountBox icon",
-                        unselected = clientCPF.isEmpty(),
-                    ) {
-                        FormTextField(
-                            label = "CPF",
-                            value = clientCPF,
-                            onValueChange = { if (it.length <= 11) clientCPF = it },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done,
-                            ),
-                            visualTransformation = cpfMask,
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    onEvent(
-                                        ClientDetailEvent.OnMainAction(
-                                            clientName,
-                                            clientCPF,
-                                            clientBirthDate,
-                                            clientUF,
-                                            clientPhones,
-                                        )
-                                    )
-                                }
-                            ),
-                        )
-                    }
-                }
-
-
-                // TODO: implement error handling
-                item {
-                    when (actionUiState) {
-                        is ActionUiState.Errors -> {
-                            for (error in actionUiState.errorMessages) {
-                                Text(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    text = error,
-                                    color = Color.Red,
-                                )
-                            }
+                // TODO: maybe implement it in a better way?
+                when (actionUiState) {
+                    is ActionUiState.Errors -> {
+                        item {
+                            Text(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                fontWeight = FontWeight.SemiBold,
+                                text = "Por favor corrija o seguinte:",
+                                color = Color.Red,
+                            )
                         }
 
-                        else -> Unit
+                        items(actionUiState.errorMessages) { error ->
+                            Text(
+                                modifier = Modifier
+                                    .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+                                text = "• $error",
+                                fontWeight = FontWeight.Normal,
+                                color = Color.Red,
+                            )
+                        }
                     }
+
+                    else -> Unit
                 }
+
 
                 item {
                     Button(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         onClick = {
                             onEvent(
                                 ClientDetailEvent.OnMainAction(
