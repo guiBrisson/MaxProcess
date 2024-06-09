@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,27 +24,110 @@ class ClientDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val clientId: Long = checkNotNull(savedStateHandle.get<Long>(NavUtils.CLIENT_ID_ARG))
-
     private val _screenUiState = MutableStateFlow<ScreenUiState>(ScreenUiState.Loading)
     val screenUiState: StateFlow<ScreenUiState> = _screenUiState.asStateFlow()
 
-    fun updateScreenUiState() {
+    private val _actionUiState = MutableStateFlow<ActionUiState>(ActionUiState.Idle)
+    val actionUiState: StateFlow<ActionUiState> = _actionUiState.asStateFlow()
+
+    fun handleEvents(event: ClientDetailEvent) {
+        when (event) {
+            ClientDetailEvent.OnInitialLoad -> updateScreenUiState()
+
+            is ClientDetailEvent.OnMainAction -> {
+                saveClient(event.name, event.cpf, event.birthDate, event.uf, event.phones)
+            }
+        }
+    }
+
+    private fun updateScreenUiState() {
         _screenUiState.value = ScreenUiState.Loading
         viewModelScope.launch {
             val client = clientRepository.client(clientId)
 
             _screenUiState.value = if (client == null) {
-                 ScreenUiState.NewClient
+                ScreenUiState.NewClient
             } else {
                 ScreenUiState.EditClient(client)
             }
         }
     }
 
-}
+    private fun saveClient(
+        name: String,
+        cpf: String?,
+        birthDate: String?,
+        uf: String?,
+        phones: List<String>?,
+    ) {
+        _actionUiState.value = ActionUiState.Loading
+        val errorMessages = mutableListOf<String>()
 
-sealed interface ScreenUiState {
-    data object Loading : ScreenUiState
-    data object NewClient : ScreenUiState
-    data class EditClient(val client: Client) : ScreenUiState
+        // validate name
+        if (name.isBlank()) errorMessages.add("Nome é obrigatório")
+
+        // validate the birthDate
+        val formattedBirthDate: Date? = if (!birthDate.isNullOrEmpty()) {
+            parseBirthDate(birthDate) { error -> errorMessages.add(error) }
+        } else null
+
+
+        // enforce the CPF when UF is SP
+        if (uf == "SP" && cpf.isNullOrEmpty()) {
+            errorMessages.add("CPF é obrigatório para clientes de SP")
+        }
+
+        // enforce over 18 year old only when UF is MG
+        val eighteenYearsAgo = Calendar.getInstance().apply { add(Calendar.YEAR, -18) }
+        val ofLegalAge = formattedBirthDate?.after(eighteenYearsAgo.time) == false
+        if (uf == "MG" && (formattedBirthDate == null || !ofLegalAge)) {
+            errorMessages.add("Clientes de MG devem ter no mínimo 18 anos")
+        }
+
+        // if there are any errors, update the UI state with the error messages and early return
+        if (errorMessages.isNotEmpty()) {
+            _actionUiState.value = ActionUiState.Errors(errorMessages)
+            return
+        }
+
+        val client: Client = when (val state = _screenUiState.value) {
+            is ScreenUiState.EditClient -> state.client.copy(
+                name = name, cpf = cpf, birthDate = formattedBirthDate, uf = uf, phones = phones,
+            )
+
+            else -> Client(name, cpf, formattedBirthDate, uf, phones)
+        }
+
+        viewModelScope.launch {
+            val id: Long? = clientRepository.save(client)
+            _actionUiState.value = if (id != null) {
+                ActionUiState.Saved
+            } else {
+                ActionUiState.Errors(listOf("Erro interno ao salvar o cliente"))
+            }
+        }
+    }
+
+    private fun parseBirthDate(bd: String, onInvalid: (message: String) -> Unit): Date? {
+        val sdf = SimpleDateFormat("ddMMyyyy", Locale.getDefault())
+        sdf.isLenient = false // This ensures strict date validation
+
+        try {
+            // If the parsing succeeds, the date is valid
+            val date: Date? = sdf.parse(bd)
+
+            // compare with current date
+            val currentDate = Date()
+            if (date?.after(currentDate) == true) {
+                onInvalid("Data de aniversário inválida")
+                return null
+            }
+
+            // date parsed successfully
+            return date
+        } catch (e: ParseException) {
+            onInvalid("Data de aniversário inválida")
+            return null
+        }
+    }
 }

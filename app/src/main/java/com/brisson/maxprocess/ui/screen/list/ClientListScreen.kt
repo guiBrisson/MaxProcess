@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -66,17 +68,30 @@ internal fun ClientListScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
             ) {
                 Icon(
-                    modifier = Modifier.padding(end = 4.dp).size(20.dp),
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .size(20.dp),
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add new client icon",
                 )
 
                 Text(text = "Novo", fontSize = 14.sp)
             }
+        }
 
-            //TODO: search component
-            
-            //TODO: handle listUiState
+        //TODO: search component
+
+        //TODO: handle listUiState
+        when (listUiState) {
+            is ListUiState.Error -> { /*TODO*/ }
+            ListUiState.Loading -> { /*TODO*/ }
+            is ListUiState.Success -> {
+                LazyColumn {
+                    items(listUiState.clients) { client ->
+                        Text(text = client.name)
+                    }
+                }
+            }
         }
     }
 }
