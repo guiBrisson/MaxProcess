@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
@@ -57,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
+import com.brisson.maxprocess.ui.theme.lightStrokeColor
+import com.brisson.maxprocess.ui.theme.unselectedColor
 
 @Composable
 fun ClientDetailRoute(
@@ -118,10 +119,10 @@ internal fun ClientDetailScreen(
         if (screenUiState.isLoading()) {
             LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth().height(1.dp),
-                trackColor = Color(0xffE6E6E6),
+                trackColor = lightStrokeColor,
             )
         } else {
-            Divider(modifier = Modifier.fillMaxWidth(), color = Color(0xffE6E6E6))
+            Divider(modifier = Modifier.fillMaxWidth(), color = lightStrokeColor)
         }
 
         if (!screenUiState.isLoading()) {
@@ -298,7 +299,7 @@ private fun FormComponent(
     unselected: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val iconTint = if (unselected) Color(0xff828282) else MaterialTheme.colorScheme.primary
+    val iconTint = if (unselected) unselectedColor else MaterialTheme.colorScheme.primary
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -322,14 +323,13 @@ fun FormTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     onValueChange: (String) -> Unit,
 ) {
-    val unselectedColor = Color(0xff828282)
-
     BasicTextField(
         modifier = modifier,
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
         textStyle = TextStyle(
+            fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onBackground,
         ),
@@ -340,7 +340,7 @@ fun FormTextField(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                if (value.isEmpty()) Text(text = label, color = unselectedColor)
+                if (value.isEmpty()) Text(text = label, color = unselectedColor, fontSize = 16.sp)
                 innerTextField()
             }
         }
