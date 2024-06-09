@@ -90,12 +90,18 @@ class ClientDetailViewModel @Inject constructor(
             return
         }
 
+        val filteredPhones = phones?.filter { it.isNotEmpty() }
+
         val client: Client = when (val state = _screenUiState.value) {
             is ScreenUiState.EditClient -> state.client.copy(
-                name = name, cpf = cpf, birthDate = formattedBirthDate, uf = uf, phones = phones,
+                name = name,
+                cpf = cpf,
+                birthDate = formattedBirthDate,
+                uf = uf,
+                phones = filteredPhones,
             )
 
-            else -> Client(name, cpf, formattedBirthDate, uf, phones)
+            else -> Client(name, cpf, formattedBirthDate, uf, filteredPhones)
         }
 
         viewModelScope.launch {

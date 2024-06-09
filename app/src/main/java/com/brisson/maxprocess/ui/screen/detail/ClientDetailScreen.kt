@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,14 +24,17 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
@@ -40,12 +42,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -72,6 +77,7 @@ import com.brisson.maxprocess.domain.model.mockedBrazilStates
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
+import com.brisson.maxprocess.ui.util.ButtonBottom
 import com.brisson.maxprocess.ui.util.MaskVisualTransformation
 
 @Composable
@@ -107,20 +113,21 @@ internal fun ClientDetailScreen(
     onEvent: (ClientDetailEvent) -> Unit,
     onBack: () -> Unit,
 ) {
+    var ufDropdownExpanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     var clientName by remember { mutableStateOf("") }
     var clientBirthDate by remember { mutableStateOf("") }
     var clientUF by remember { mutableStateOf("") }
-    var clientPhones by remember { mutableStateOf("") } // TODO: implement multiple phone numbers
+    val clientPhones = remember { mutableStateListOf("") }
     var clientCPF by remember { mutableStateOf("") }
 
-    var ufDropdownExpanded by remember { mutableStateOf(false) }
-
     Column(modifier = modifier) {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
             val title = when (screenUiState) {
                 is ScreenUiState.EditClient -> "Editar cliente"
                 ScreenUiState.Loading -> ""
@@ -152,12 +159,13 @@ internal fun ClientDetailScreen(
 
         if (!screenUiState.isLoading()) {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(28.dp),
-                contentPadding = PaddingValues(vertical = 40.dp, horizontal = 20.dp),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = ButtonBottom,
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 40.dp),
             ) {
                 item {
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                         icon = Icons.Outlined.Person,
                         contentDescription = "Person icon",
                         unselected = clientName.isEmpty(),
@@ -176,10 +184,11 @@ internal fun ClientDetailScreen(
                         )
                     }
                 }
+
                 item {
                     val dateMask = MaskVisualTransformation("##/##/####")
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                         icon = Icons.Outlined.DateRange,
                         contentDescription = "Date icon",
                         unselected = clientBirthDate.isEmpty(),
@@ -207,6 +216,7 @@ internal fun ClientDetailScreen(
                     FormComponent(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(vertical = 12.dp)
                             .clickable(
                                 interactionSource = interactionSource,
                                 indication = null,
@@ -266,38 +276,85 @@ internal fun ClientDetailScreen(
                     val phone9DigitsMask = MaskVisualTransformation("(##) # ####-####")
 
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
                         icon = Icons.Outlined.Phone,
                         contentDescription = "Phone icon",
-                        unselected = clientPhones.isEmpty(),
+                        verticalAlignment = Alignment.Top,
+                        unselected = clientPhones.find { it.isNotEmpty() } == null,
                     ) {
-                        // TODO: implement multiple phone numbers
-                        FormTextField(
-                            label = "Telefone",
-                            value = clientPhones,
-                            onValueChange = {
-                                if (it.length <= 11) clientPhones = it
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone,
-                                imeAction = ImeAction.Next,
-                            ),
-                            visualTransformation = if (clientPhones.length <= 10) {
-                                phoneMask
-                            } else {
-                                phone9DigitsMask
-                            },
-                            keyboardActions = KeyboardActions(onNext = {
-                                focusManager.moveFocus(FocusDirection.Down)
-                            }),
-                        )
+                        Column {
+                            clientPhones.forEachIndexed { index, phone ->
+                                Row(
+                                    modifier = Modifier,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (index != 0) {
+                                        IconButton(
+                                            modifier = Modifier,
+                                            onClick = { clientPhones.removeAt(index) },
+                                            colors = IconButtonDefaults.iconButtonColors(
+                                                contentColor = unselectedColor,
+                                            ),
+                                        ) {
+                                            Icon(
+                                                modifier = Modifier.size(20.dp),
+                                                imageVector = Icons.Default.Remove,
+                                                contentDescription = "Remove icon",
+                                            )
+                                        }
+                                    }
+
+                                    FormTextField(
+                                        label = "Telefone",
+                                        value = phone,
+                                        onValueChange = {
+                                            if (it.length <= 11) clientPhones[index] = it
+                                        },
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Phone,
+                                            imeAction = ImeAction.Next,
+                                        ),
+                                        visualTransformation = if (phone.length <= 10) {
+                                            phoneMask
+                                        } else {
+                                            phone9DigitsMask
+                                        },
+                                        keyboardActions = KeyboardActions(onNext = {
+                                            focusManager.moveFocus(FocusDirection.Down)
+                                        }),
+                                    )
+                                }
+                            }
+
+                            TextButton(
+                                onClick = { clientPhones.add("") },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = unselectedColor,
+                                ),
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .padding(end = 12.dp)
+                                        .size(24.dp),
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add icon",
+                                )
+
+                                Text(
+                                    text = "Adicionar mais",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Normal,
+                                )
+                            }
+                        }
+
                     }
                 }
 
                 item {
                     val cpfMask = MaskVisualTransformation("###.###.###-##")
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
                         icon = Icons.Outlined.AccountBox,
                         contentDescription = "AccountBox icon",
                         unselected = clientCPF.isEmpty(),
@@ -305,9 +362,7 @@ internal fun ClientDetailScreen(
                         FormTextField(
                             label = "CPF",
                             value = clientCPF,
-                            onValueChange = {
-                                if (it.length <= 11) clientCPF = it
-                            },
+                            onValueChange = { if (it.length <= 11) clientCPF = it },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
                                 imeAction = ImeAction.Done,
@@ -321,7 +376,7 @@ internal fun ClientDetailScreen(
                                             clientCPF,
                                             clientBirthDate,
                                             clientUF,
-                                            listOf(clientPhones),
+                                            clientPhones,
                                         )
                                     )
                                 }
@@ -329,54 +384,63 @@ internal fun ClientDetailScreen(
                         )
                     }
                 }
-            }
-        }
 
-        // TODO: implement error handling
-        when (actionUiState) {
-            is ActionUiState.Errors -> {
-                for (error in actionUiState.errorMessages) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        text = error,
-                        color = Color.Red,
-                    )
-                }
-            }
-            else -> Unit
-        }
 
-        Spacer(modifier = Modifier.weight(1f))
+                // TODO: implement error handling
+                item {
+                    when (actionUiState) {
+                        is ActionUiState.Errors -> {
+                            for (error in actionUiState.errorMessages) {
+                                Text(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    text = error,
+                                    color = Color.Red,
+                                )
+                            }
+                        }
 
-        if (!screenUiState.isLoading()) {
-            Button(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                onClick = {
-                    onEvent(ClientDetailEvent.OnMainAction(
-                        clientName, clientCPF, clientBirthDate, clientUF, listOf(clientPhones))
-                    )
-                },
-                shape = RoundedCornerShape(8.dp),
-                enabled = !actionUiState.isLoading(),
-                contentPadding = PaddingValues(vertical = 12.dp),
-            ) {
-                val text = when (screenUiState) {
-                    is ScreenUiState.EditClient -> "Salvar alterações"
-                    ScreenUiState.NewClient -> "Adicionar"
-                    else -> if (actionUiState.isLoading()) "Carregando..." else ""
+                        else -> Unit
+                    }
                 }
 
-                if (actionUiState.isLoading()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(end = 8.dp).size(16.dp),
-                        color = Color.Gray.copy(alpha = 0.5f),
-                        strokeWidth = 3.dp,
-                        strokeCap = StrokeCap.Round,
-                    )
-                }
+                item {
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        onClick = {
+                            onEvent(
+                                ClientDetailEvent.OnMainAction(
+                                    clientName, clientCPF, clientBirthDate, clientUF, clientPhones
+                                )
+                            )
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !actionUiState.isLoading(),
+                        contentPadding = PaddingValues(vertical = 12.dp),
+                    ) {
+                        val text = when (screenUiState) {
+                            is ScreenUiState.EditClient -> "Salvar alterações"
+                            ScreenUiState.NewClient -> "Adicionar"
+                            else -> if (actionUiState.isLoading()) "Carregando..." else ""
+                        }
 
-                Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        if (actionUiState.isLoading()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .size(16.dp),
+                                color = Color.Gray.copy(alpha = 0.5f),
+                                strokeWidth = 3.dp,
+                                strokeCap = StrokeCap.Round,
+                            )
+                        }
+
+                        Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
             }
+
         }
     }
 }
@@ -387,12 +451,13 @@ private fun FormComponent(
     icon: ImageVector,
     contentDescription: String,
     unselected: Boolean,
+    verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
     content: @Composable () -> Unit,
 ) {
     val iconTint = if (unselected) unselectedColor else MaterialTheme.colorScheme.primary
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = verticalAlignment,
         horizontalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Icon(
