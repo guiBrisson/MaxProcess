@@ -1,5 +1,9 @@
 package com.brisson.maxprocess.ui.screen.detail
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
@@ -29,6 +35,9 @@ import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -42,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.brisson.maxprocess.domain.model.mockedBrazilStates
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
@@ -72,7 +83,10 @@ fun ClientDetailRoute(
     LaunchedEffect(actionUiState) { if (actionUiState.isSuccess()) onBack() }
 
     ClientDetailScreen(
-        modifier = modifier then Modifier.fillMaxSize(),
+        modifier = modifier then Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.ime)
+            .windowInsetsPadding(WindowInsets.navigationBars),
         screenUiState = screenUiState,
         actionUiState = actionUiState,
         onEvent = viewModel::handleEvents,
@@ -80,6 +94,7 @@ fun ClientDetailRoute(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ClientDetailScreen(
     modifier: Modifier = Modifier,
@@ -90,11 +105,13 @@ internal fun ClientDetailScreen(
 ) {
     var clientName by remember { mutableStateOf("") }
     var clientBirthDate by remember { mutableStateOf("") }
-    var clientUF by remember { mutableStateOf("") }     // TODO: implement dropdown
+    var clientUF by remember { mutableStateOf("") }
     var clientPhones by remember { mutableStateOf("") } // TODO: implement multiple phone numbers
     var clientCPF by remember { mutableStateOf("") }
 
-    Column(modifier = modifier then Modifier.windowInsetsPadding(WindowInsets.navigationBars)) {
+    var ufDropdownExpanded by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
         Box(modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)) {
@@ -118,7 +135,9 @@ internal fun ClientDetailScreen(
 
         if (screenUiState.isLoading()) {
             LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().height(1.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp),
                 trackColor = lightStrokeColor,
             )
         } else {
@@ -170,18 +189,61 @@ internal fun ClientDetailScreen(
                 }
 
                 item {
+                    val interactionSource = remember { MutableInteractionSource() }
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                                onClick = { ufDropdownExpanded = !ufDropdownExpanded }
+                            ),
                         icon = Icons.Outlined.LocationOn,
                         contentDescription = "Location icon",
                         unselected = clientUF.isEmpty(),
                     ) {
-                        //TODO: implement dropdown
-                        FormTextField(
-                            label = "UF",
-                            value = clientUF,
-                            onValueChange = { clientUF = it },
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ExposedDropdownMenuBox(
+                                modifier = Modifier.weight(1f),
+                                expanded = ufDropdownExpanded,
+                                onExpandedChange = { ufDropdownExpanded = !ufDropdownExpanded }
+                            ) {
+                                FormTextField(
+                                    modifier = Modifier.menuAnchor(),
+                                    readOnly = true,
+                                    label = "UF",
+                                    value = clientUF,
+                                    onValueChange = { clientUF = it },
+                                )
+
+                                ExposedDropdownMenu(
+                                    modifier = Modifier.background(Color.White),
+                                    expanded = ufDropdownExpanded,
+                                    onDismissRequest = { ufDropdownExpanded = false },
+                                ) {
+                                    mockedBrazilStates.forEach { (uf, name) ->
+                                        DropdownMenuItem(
+                                            text = { Text(text = "$uf - $name") },
+                                            onClick = { clientUF = uf; ufDropdownExpanded = false },
+                                        )
+                                    }
+                                }
+                            }
+                            val degrees by animateFloatAsState(
+                                targetValue = if (ufDropdownExpanded) 180f else 0f,
+                                label = "Keyboard arrow icon animation",
+                            )
+
+                            Icon(
+                                modifier = Modifier.rotate(degrees),
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Keyboard arrow icon",
+                                tint = unselectedColor,
+                            )
+                        }
                     }
                 }
 
@@ -240,6 +302,7 @@ internal fun ClientDetailScreen(
             }
         }
 
+        // TODO: implement error handling
         when (actionUiState) {
             is ActionUiState.Errors -> {
                 for (error in actionUiState.errorMessages) {
@@ -257,9 +320,7 @@ internal fun ClientDetailScreen(
 
         if (!screenUiState.isLoading()) {
             Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 onClick = {
                     onEvent(ClientDetailEvent.OnMainAction(
                         clientName, clientCPF, clientBirthDate, clientUF, listOf(clientPhones))
@@ -267,6 +328,7 @@ internal fun ClientDetailScreen(
                 },
                 shape = RoundedCornerShape(8.dp),
                 enabled = !actionUiState.isLoading(),
+                contentPadding = PaddingValues(vertical = 12.dp),
             ) {
                 val text = when (screenUiState) {
                     is ScreenUiState.EditClient -> "Salvar alterações"
@@ -276,9 +338,7 @@ internal fun ClientDetailScreen(
 
                 if (actionUiState.isLoading()) {
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .size(16.dp),
+                        modifier = Modifier.padding(end = 8.dp).size(16.dp),
                         color = Color.Gray.copy(alpha = 0.5f),
                         strokeWidth = 3.dp,
                         strokeCap = StrokeCap.Round,
@@ -315,10 +375,11 @@ private fun FormComponent(
 }
 
 @Composable
-fun FormTextField(
+private fun FormTextField(
     modifier: Modifier = Modifier,
     label: String,
     value: String,
+    readOnly: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     onValueChange: (String) -> Unit,
@@ -335,6 +396,7 @@ fun FormTextField(
         ),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
+        readOnly = readOnly,
         decorationBox = { innerTextField ->
             Box(
                 modifier = Modifier.fillMaxWidth(),
