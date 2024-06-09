@@ -52,14 +52,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,6 +72,7 @@ import com.brisson.maxprocess.domain.model.mockedBrazilStates
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
+import com.brisson.maxprocess.ui.util.MaskVisualTransformation
 
 @Composable
 fun ClientDetailRoute(
@@ -103,6 +107,8 @@ internal fun ClientDetailScreen(
     onEvent: (ClientDetailEvent) -> Unit,
     onBack: () -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
+
     var clientName by remember { mutableStateOf("") }
     var clientBirthDate by remember { mutableStateOf("") }
     var clientUF by remember { mutableStateOf("") }
@@ -164,11 +170,14 @@ internal fun ClientDetailScreen(
                                 capitalization = KeyboardCapitalization.Words,
                                 imeAction = ImeAction.Next,
                             ),
-                            keyboardActions = KeyboardActions(onNext = { /*TODO*/ }),
+                            keyboardActions = KeyboardActions(onNext = {
+                                focusManager.moveFocus(FocusDirection.Down)
+                            }),
                         )
                     }
                 }
                 item {
+                    val dateMask = MaskVisualTransformation("##/##/####")
                     FormComponent(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Outlined.DateRange,
@@ -178,12 +187,17 @@ internal fun ClientDetailScreen(
                         FormTextField(
                             label = "Data de nascimento",
                             value = clientBirthDate,
-                            onValueChange = { clientBirthDate = it },
+                            onValueChange = {
+                                if (it.length <= 8) clientBirthDate = it
+                            },
+                            visualTransformation = dateMask,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
                                 imeAction = ImeAction.Next,
                             ),
-                            keyboardActions = KeyboardActions(onNext = { /*TODO*/ }),
+                            keyboardActions = KeyboardActions(onNext = {
+                                focusManager.moveFocus(FocusDirection.Down)
+                            }),
                         )
                     }
                 }
@@ -248,6 +262,9 @@ internal fun ClientDetailScreen(
                 }
 
                 item {
+                    val phoneMask = MaskVisualTransformation("(##) ####-####")
+                    val phone9DigitsMask = MaskVisualTransformation("(##) # ####-####")
+
                     FormComponent(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Outlined.Phone,
@@ -258,17 +275,27 @@ internal fun ClientDetailScreen(
                         FormTextField(
                             label = "Telefone",
                             value = clientPhones,
-                            onValueChange = { clientPhones = it },
+                            onValueChange = {
+                                if (it.length <= 11) clientPhones = it
+                            },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Phone,
                                 imeAction = ImeAction.Next,
                             ),
-                            keyboardActions = KeyboardActions(onNext = { /*TODO*/ }),
+                            visualTransformation = if (clientPhones.length <= 10) {
+                                phoneMask
+                            } else {
+                                phone9DigitsMask
+                            },
+                            keyboardActions = KeyboardActions(onNext = {
+                                focusManager.moveFocus(FocusDirection.Down)
+                            }),
                         )
                     }
                 }
 
                 item {
+                    val cpfMask = MaskVisualTransformation("###.###.###-##")
                     FormComponent(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Outlined.AccountBox,
@@ -278,11 +305,14 @@ internal fun ClientDetailScreen(
                         FormTextField(
                             label = "CPF",
                             value = clientCPF,
-                            onValueChange = { clientCPF = it },
+                            onValueChange = {
+                                if (it.length <= 11) clientCPF = it
+                            },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
                                 imeAction = ImeAction.Done,
                             ),
+                            visualTransformation = cpfMask,
                             keyboardActions = KeyboardActions(
                                 onDone = {
                                     onEvent(
@@ -380,6 +410,7 @@ private fun FormTextField(
     label: String,
     value: String,
     readOnly: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     onValueChange: (String) -> Unit,
@@ -397,6 +428,7 @@ private fun FormTextField(
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         readOnly = readOnly,
+        visualTransformation = visualTransformation,
         decorationBox = { innerTextField ->
             Box(
                 modifier = Modifier.fillMaxWidth(),
