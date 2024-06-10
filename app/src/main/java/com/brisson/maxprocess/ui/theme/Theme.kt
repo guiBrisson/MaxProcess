@@ -18,7 +18,7 @@ private val LightColorScheme = lightColorScheme(
 fun MaxProcessTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = LightColorScheme,
-        typography = defaultTypography,
+        typography = Typography,
         content = content
     )
 }
