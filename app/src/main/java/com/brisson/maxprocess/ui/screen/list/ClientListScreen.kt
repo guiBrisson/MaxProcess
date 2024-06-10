@@ -1,5 +1,6 @@
 package com.brisson.maxprocess.ui.screen.list
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -115,15 +115,22 @@ internal fun ClientListScreen(
             }
 
             is ClientListUiState.Success -> {
-                if (listUiState.clients.isEmpty()) {
-                    ClientListEmptyState(modifier = Modifier.fillMaxSize())
-                } else {
-                    ClientList(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        listUiState = listUiState,
-                        onClient = onClient,
-                        onDeleteClient = onDeleteClient,
-                    )
+                AnimatedContent(
+                    targetState = listUiState.clients,
+                    label = "Client list success content animation",
+                ) { clients ->
+                    if (clients.isEmpty()) {
+                        ClientListEmptyState(modifier = Modifier.fillMaxSize())
+                    } else {
+                        ClientList(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            listUiState = listUiState,
+                            onClient = onClient,
+                            onDeleteClient = onDeleteClient,
+                        )
+                    }
                 }
             }
         }
@@ -172,9 +179,9 @@ private fun ClientListEmptyState(modifier: Modifier = Modifier) {
         )
 
         Text(
-            modifier = Modifier.padding(top = 12.dp).widthIn(max = 280.dp),
+            modifier = Modifier.padding(top = 12.dp),
             text = buildAnnotatedString {
-                append("Adicione um cliente na sua agenda clicando no botão ")
+                append("Adicione um cliente na sua agenda\nclicando no botão ")
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                     append("+ Novo")
                 }
@@ -293,7 +300,7 @@ private fun PreviewClientListScreen() {
     MaxProcessTheme {
         ClientListScreen(
             modifier = Modifier.fillMaxSize(),
-            listUiState = ClientListUiState.Loading,
+            listUiState = ClientListUiState.Success(emptyList()),
             onNewClient = { },
             onClient = { },
             onDeleteClient = { },

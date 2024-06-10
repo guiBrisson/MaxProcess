@@ -80,6 +80,8 @@ import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
 import com.brisson.maxprocess.ui.util.ButtonBottom
 import com.brisson.maxprocess.ui.util.MaskVisualTransformation
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun ClientDetailRoute(
@@ -115,6 +117,7 @@ internal fun ClientDetailScreen(
     onBack: () -> Unit,
 ) {
     var ufDropdownExpanded by remember { mutableStateOf(false) }
+    val toggleUfDropdown: () -> Unit = { ufDropdownExpanded = !ufDropdownExpanded }
     val focusManager = LocalFocusManager.current
 
     var clientName by remember { mutableStateOf("") }
@@ -123,12 +126,24 @@ internal fun ClientDetailScreen(
     val clientPhones = remember { mutableStateListOf("") }
     var clientCPF by remember { mutableStateOf("") }
 
+    LaunchedEffect(screenUiState) {
+        if (screenUiState is ScreenUiState.EditClient) {
+            clientName = screenUiState.client.name
+            clientUF = screenUiState.client.uf ?: ""
+            clientCPF = screenUiState.client.cpf ?: ""
+
+            screenUiState.client.phones?.let {
+                clientPhones.clear()
+                clientPhones.addAll(it)
+            }
+
+            val formatter = SimpleDateFormat("ddMMyyyy", Locale.getDefault())
+            clientBirthDate = screenUiState.client.birthDate?.let { formatter.format(it) } ?: ""
+        }
+    }
+
     Column(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
             val title = when (screenUiState) {
                 is ScreenUiState.EditClient -> "Editar cliente"
                 ScreenUiState.Loading -> ""
@@ -219,7 +234,7 @@ internal fun ClientDetailScreen(
                             .clickable(
                                 interactionSource = interactionSource,
                                 indication = null,
-                                onClick = { ufDropdownExpanded = !ufDropdownExpanded }
+                                onClick = { toggleUfDropdown() }
                             ),
                         icon = Icons.Outlined.LocationOn,
                         contentDescription = "Location icon",
@@ -232,7 +247,7 @@ internal fun ClientDetailScreen(
                             ExposedDropdownMenuBox(
                                 modifier = Modifier.weight(1f),
                                 expanded = ufDropdownExpanded,
-                                onExpandedChange = { ufDropdownExpanded = !ufDropdownExpanded }
+                                onExpandedChange = { toggleUfDropdown() }
                             ) {
                                 FormTextField(
                                     modifier = Modifier.menuAnchor(),
@@ -284,22 +299,12 @@ internal fun ClientDetailScreen(
                             onValueChange = { if (it.length <= 11) clientCPF = it },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done,
+                                imeAction = ImeAction.Next,
                             ),
                             visualTransformation = cpfMask,
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    onEvent(
-                                        ClientDetailEvent.OnMainAction(
-                                            clientName,
-                                            clientCPF,
-                                            clientBirthDate,
-                                            clientUF,
-                                            clientPhones,
-                                        )
-                                    )
-                                }
-                            ),
+                            keyboardActions = KeyboardActions(onNext = {
+                                focusManager.moveFocus(FocusDirection.Down)
+                            }),
                         )
                     }
                 }
@@ -352,9 +357,19 @@ internal fun ClientDetailScreen(
                                         } else {
                                             phone9DigitsMask
                                         },
-                                        keyboardActions = KeyboardActions(onNext = {
-                                            focusManager.moveFocus(FocusDirection.Down)
-                                        }),
+                                        keyboardActions = KeyboardActions(
+                                            onDone = {
+                                                onEvent(
+                                                    ClientDetailEvent.OnMainAction(
+                                                        clientName,
+                                                        clientCPF,
+                                                        clientBirthDate,
+                                                        clientUF,
+                                                        clientPhones,
+                                                    )
+                                                )
+                                            }
+                                        )
                                     )
                                 }
                             }
@@ -413,7 +428,9 @@ internal fun ClientDetailScreen(
 
                 item {
                     Button(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
                         onClick = {
                             onEvent(
                                 ClientDetailEvent.OnMainAction(
