@@ -9,14 +9,29 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ClientListViewModel @Inject constructor(
-    clientRepository: ClientRepository,
+    private val clientRepository: ClientRepository,
 ) : ViewModel() {
-    val clientListUiState: StateFlow<ListUiState> = clientRepository.clientList()
-        .map { clients -> ListUiState.Success(clients) }
-        .catch { t -> ListUiState.Error(t.message.toString()) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), ListUiState.Loading)
+    val clientListUiState: StateFlow<ClientListUiState> = clientRepository.clientList()
+        .map { clients -> ClientListUiState.Success(clients) }
+        .catch { t -> ClientListUiState.Error(t.message.toString()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), ClientListUiState.Loading)
+
+    fun handleEvents(event: ClientListEvent) {
+        when (event) {
+            is ClientListEvent.OnDeleteClient -> deleteClient(event.clientId)
+        }
+    }
+
+    private fun deleteClient(id: Long) {
+        viewModelScope.launch {
+            clientRepository.client(id)?.let { client ->
+                clientRepository.delete(client)
+            }
+        }
+    }
 }

@@ -69,14 +69,14 @@ fun ClientListRoute(
         listUiState = listUiState,
         onNewClient = onNewClient,
         onClient = onClient,
-        onDeleteClient = { /*TODO*/ },
+        onDeleteClient = { id -> viewModel.handleEvents(ClientListEvent.OnDeleteClient(id)) },
     )
 }
 
 @Composable
 internal fun ClientListScreen(
     modifier: Modifier = Modifier,
-    listUiState: ListUiState,
+    listUiState: ClientListUiState,
     onNewClient: () -> Unit,
     onClient: (id: Long) -> Unit,
     onDeleteClient: (id: Long) -> Unit,
@@ -108,13 +108,13 @@ internal fun ClientListScreen(
         //TODO: search component
 
         when (listUiState) {
-            is ListUiState.Error -> { /*TODO*/ }
+            is ClientListUiState.Error -> { /*TODO*/ }
 
-            ListUiState.Loading -> {
+            ClientListUiState.Loading -> {
                 ClientListLoadingState(modifier = Modifier.fillMaxWidth().weight(1f))
             }
 
-            is ListUiState.Success -> {
+            is ClientListUiState.Success -> {
                 if (listUiState.clients.isEmpty()) {
                     ClientListEmptyState(modifier = Modifier.fillMaxSize())
                 } else {
@@ -191,7 +191,7 @@ private fun ClientListEmptyState(modifier: Modifier = Modifier) {
 @Composable
 private fun ClientList(
     modifier: Modifier = Modifier,
-    listUiState: ListUiState.Success,
+    listUiState: ClientListUiState.Success,
     onClient: (id: Long) -> Unit,
     onDeleteClient: (id: Long) -> Unit,
 ) {
@@ -293,7 +293,7 @@ private fun PreviewClientListScreen() {
     MaxProcessTheme {
         ClientListScreen(
             modifier = Modifier.fillMaxSize(),
-            listUiState = ListUiState.Loading,
+            listUiState = ClientListUiState.Loading,
             onNewClient = { },
             onClient = { },
             onDeleteClient = { },
