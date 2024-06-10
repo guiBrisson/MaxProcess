@@ -3,6 +3,7 @@ package com.brisson.maxprocess.ui.screen.list
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +53,7 @@ import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
+import com.brisson.maxprocess.ui.util.shimmerEffect
 
 @Composable
 fun ClientListRoute(
@@ -92,9 +96,7 @@ internal fun ClientListScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
             ) {
                 Icon(
-                    modifier = Modifier
-                        .padding(end = 4.dp)
-                        .size(20.dp),
+                    modifier = Modifier.padding(end = 4.dp).size(20.dp),
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add new client icon",
                 )
@@ -107,7 +109,11 @@ internal fun ClientListScreen(
 
         when (listUiState) {
             is ListUiState.Error -> { /*TODO*/ }
-            ListUiState.Loading -> { /*TODO*/ }
+
+            ListUiState.Loading -> {
+                ClientListLoadingState(modifier = Modifier.fillMaxWidth().weight(1f))
+            }
+
             is ListUiState.Success -> {
                 if (listUiState.clients.isEmpty()) {
                     ClientListEmptyState(modifier = Modifier.fillMaxSize())
@@ -119,6 +125,33 @@ internal fun ClientListScreen(
                         onDeleteClient = onDeleteClient,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClientListLoadingState(modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        repeat(2) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .width(15.dp)
+                    .height(25.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect(),
+            )
+
+            repeat(4) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .fillMaxWidth()
+                        .height(55.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect(),
+                )
             }
         }
     }
@@ -139,9 +172,7 @@ private fun ClientListEmptyState(modifier: Modifier = Modifier) {
         )
 
         Text(
-            modifier = Modifier
-                .padding(top = 12.dp)
-                .widthIn(max = 280.dp),
+            modifier = Modifier.padding(top = 12.dp).widthIn(max = 280.dp),
             text = buildAnnotatedString {
                 append("Adicione um cliente na sua agenda clicando no botão ")
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
@@ -188,9 +219,7 @@ private fun ClientList(
                 val toggleMenu: () -> Unit = { showMenu = !showMenu }
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -264,7 +293,7 @@ private fun PreviewClientListScreen() {
     MaxProcessTheme {
         ClientListScreen(
             modifier = Modifier.fillMaxSize(),
-            listUiState = ListUiState.Success(emptyList()),
+            listUiState = ListUiState.Loading,
             onNewClient = { },
             onClient = { },
             onDeleteClient = { },
