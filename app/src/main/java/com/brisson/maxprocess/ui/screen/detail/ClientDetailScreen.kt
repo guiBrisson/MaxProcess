@@ -75,6 +75,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.brisson.maxprocess.domain.model.mockedBrazilStates
+import com.brisson.maxprocess.ui.component.snackbar.SnackbarProperties
+import com.brisson.maxprocess.ui.component.snackbar.SnackbarType
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
@@ -86,6 +88,7 @@ import java.util.Locale
 @Composable
 fun ClientDetailRoute(
     modifier: Modifier = Modifier,
+    onShowSnackbar: suspend (SnackbarProperties) -> Boolean,
     onBack: () -> Unit,
 ) {
     val viewModel: ClientDetailViewModel = hiltViewModel()
@@ -93,7 +96,19 @@ fun ClientDetailRoute(
     val actionUiState by viewModel.actionUiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.handleEvents(ClientDetailEvent.OnInitialLoad) }
-    LaunchedEffect(actionUiState) { if (actionUiState.isSuccess()) onBack() }
+    LaunchedEffect(actionUiState) {
+        if (actionUiState.isSuccess()) {
+            onBack()
+            onShowSnackbar(
+                SnackbarProperties(
+                    title = "Criado com Sucesso",
+                    message = "Novo cliente adicionado",
+                    type = SnackbarType.SUCCESS,
+                    actionLabel = "OK",
+                )
+            )
+        }
+    }
 
     ClientDetailScreen(
         modifier = modifier then Modifier
@@ -125,6 +140,11 @@ internal fun ClientDetailScreen(
     var clientUF by remember { mutableStateOf("") }
     val clientPhones = remember { mutableStateListOf("") }
     var clientCPF by remember { mutableStateOf("") }
+
+    val onMainAction: () -> Unit = {
+        onEvent(ClientDetailEvent.OnMainAction(clientName, clientCPF, clientBirthDate, clientUF, clientPhones))
+        focusManager.clearFocus()
+    }
 
     LaunchedEffect(screenUiState) {
         if (screenUiState is ScreenUiState.EditClient) {
@@ -358,17 +378,7 @@ internal fun ClientDetailScreen(
                                             phone9DigitsMask
                                         },
                                         keyboardActions = KeyboardActions(
-                                            onDone = {
-                                                onEvent(
-                                                    ClientDetailEvent.OnMainAction(
-                                                        clientName,
-                                                        clientCPF,
-                                                        clientBirthDate,
-                                                        clientUF,
-                                                        clientPhones,
-                                                    )
-                                                )
-                                            }
+                                            onDone = { onMainAction() }
                                         )
                                     )
                                 }
@@ -381,9 +391,7 @@ internal fun ClientDetailScreen(
                                 ),
                             ) {
                                 Icon(
-                                    modifier = Modifier
-                                        .padding(end = 12.dp)
-                                        .size(24.dp),
+                                    modifier = Modifier.padding(end = 12.dp).size(24.dp),
                                     imageVector = Icons.Default.Add,
                                     contentDescription = "Add icon",
                                 )
@@ -431,13 +439,7 @@ internal fun ClientDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 16.dp),
-                        onClick = {
-                            onEvent(
-                                ClientDetailEvent.OnMainAction(
-                                    clientName, clientCPF, clientBirthDate, clientUF, clientPhones
-                                )
-                            )
-                        },
+                        onClick = { onMainAction() },
                         shape = RoundedCornerShape(8.dp),
                         enabled = !actionUiState.isLoading(),
                         contentPadding = PaddingValues(vertical = 12.dp),

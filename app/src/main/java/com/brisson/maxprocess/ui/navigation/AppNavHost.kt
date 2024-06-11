@@ -8,12 +8,14 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.brisson.maxprocess.ui.component.snackbar.SnackbarProperties
 import com.brisson.maxprocess.ui.screen.detail.ClientDetailRoute
 import com.brisson.maxprocess.ui.screen.list.ClientListRoute
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
+    onShowSnackbar: suspend (SnackbarProperties) -> Boolean,
     navController: NavHostController = rememberNavController(),
     startDestination: String = NavUtils.CLIENT_LIST_ROUTE,
 ) {
@@ -38,7 +40,10 @@ fun AppNavHost(
                 },
             )
         ) {
-            ClientDetailRoute(onBack = { navController.popBackStack() })
+            ClientDetailRoute(
+                onShowSnackbar = onShowSnackbar,
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

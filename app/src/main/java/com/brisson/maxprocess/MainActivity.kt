@@ -7,10 +7,19 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.brisson.maxprocess.ui.component.snackbar.BaseSnackbar
+import com.brisson.maxprocess.ui.component.snackbar.SnackbarProperties
 import com.brisson.maxprocess.ui.navigation.AppNavHost
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,16 +28,38 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(Color.WHITE, Color.BLACK),
             navigationBarStyle = SystemBarStyle.dark(Color.BLACK),
         )
+
         setContent {
+            val snackbarHostState = remember { SnackbarHostState() }
+
             MaxProcessTheme {
-                Surface {
-                    AppNavHost(
-                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-                    )
+                Scaffold(
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                    snackbarHost = {
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            snackbar = { data ->
+                                BaseSnackbar(
+                                    modifier = Modifier.padding(16.dp),
+                                    customProperties = data.visuals as SnackbarProperties,
+                                    performAction = data::performAction,
+                                )
+                            }
+                        )
+                    },
+                ) { paddingValues ->
+                    Surface(modifier = Modifier.padding(paddingValues)) {
+                        AppNavHost(
+                            onShowSnackbar = { props ->
+                                snackbarHostState.showSnackbar(props) == SnackbarResult.ActionPerformed
+                            }
+                        )
+                    }
                 }
             }
         }
