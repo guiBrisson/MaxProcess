@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -67,6 +68,7 @@ import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
+import com.brisson.maxprocess.ui.util.generateRandomPastelColor
 import com.brisson.maxprocess.ui.util.shimmerEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -321,6 +323,24 @@ private fun ClientList(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val containerColor = generateRandomPastelColor()
+
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(containerColor),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = client.name.first().uppercase(),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.background,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+
                     Text(
                         modifier = Modifier.weight(1f),
                         text = client.name,
@@ -379,8 +399,6 @@ private fun ClientList(
                         }
                     }
                 }
-
-                Divider(modifier = Modifier.fillMaxWidth(), color = lightStrokeColor)
             }
         }
     }
