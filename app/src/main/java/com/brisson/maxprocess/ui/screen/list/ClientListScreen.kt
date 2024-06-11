@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.brisson.maxprocess.domain.model.Client
+import com.brisson.maxprocess.ui.component.snackbar.SnackbarProperties
+import com.brisson.maxprocess.ui.component.snackbar.SnackbarType
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
@@ -74,6 +76,7 @@ fun ClientListRoute(
     modifier: Modifier = Modifier,
     onNewClient: () -> Unit,
     onClient: (id: Long) -> Unit,
+    onShowSnackbar: suspend (SnackbarProperties) -> Boolean,
 ) {
     val viewModel: ClientListViewModel = hiltViewModel()
     val listUiState by viewModel.clientListUiState.collectAsStateWithLifecycle()
@@ -83,6 +86,7 @@ fun ClientListRoute(
         listUiState = listUiState,
         onNewClient = onNewClient,
         onClient = onClient,
+        onShowSnackbar = onShowSnackbar,
         onDeleteClient = { id -> viewModel.handleEvents(ClientListEvent.OnDeleteClient(id)) },
         onSearchClient = { query -> viewModel.handleEvents(ClientListEvent.OnSearch(query)) },
     )
@@ -94,9 +98,12 @@ internal fun ClientListScreen(
     listUiState: ClientListUiState,
     onNewClient: () -> Unit,
     onClient: (id: Long) -> Unit,
+    onShowSnackbar: suspend (SnackbarProperties) -> Boolean,
     onDeleteClient: (id: Long) -> Unit,
     onSearchClient: (query: String) -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     Column(modifier = modifier then Modifier.padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -127,7 +134,15 @@ internal fun ClientListScreen(
         )
 
         when (listUiState) {
-            is ClientListUiState.Error -> { /*TODO*/ }
+            is ClientListUiState.Error -> {
+                coroutineScope.launch {
+                    onShowSnackbar(SnackbarProperties(
+                        message = "Algo aconteceu na aplicação",
+                        title = "Erro interno",
+                        type = SnackbarType.ERROR,
+                    ))
+                }
+            }
 
             ClientListUiState.Loading -> {
                 ClientListLoadingState(modifier = Modifier.fillMaxWidth().weight(1f))
@@ -372,6 +387,7 @@ private fun PreviewClientListScreen() {
             listUiState = ClientListUiState.Success(emptyList()),
             onNewClient = { },
             onClient = { },
+            onShowSnackbar = { _ -> false },
             onDeleteClient = { },
             onSearchClient = { },
         )

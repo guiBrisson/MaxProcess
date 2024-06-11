@@ -28,6 +28,7 @@ fun AppNavHost(
             ClientListRoute(
                 onNewClient = { NavUtils.navigateToClientDetail(navController) },
                 onClient = { id -> NavUtils.navigateToClientDetail(navController, id) },
+                onShowSnackbar = onShowSnackbar,
             )
         }
 
