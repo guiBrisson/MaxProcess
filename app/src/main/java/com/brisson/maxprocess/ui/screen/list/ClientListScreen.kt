@@ -3,6 +3,7 @@ package com.brisson.maxprocess.ui.screen.list
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,15 +13,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
@@ -35,13 +41,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,11 +59,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.brisson.maxprocess.domain.model.Client
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
 import com.brisson.maxprocess.ui.util.shimmerEffect
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ClientListRoute(
@@ -70,6 +84,7 @@ fun ClientListRoute(
         onNewClient = onNewClient,
         onClient = onClient,
         onDeleteClient = { id -> viewModel.handleEvents(ClientListEvent.OnDeleteClient(id)) },
+        onSearchClient = { query -> viewModel.handleEvents(ClientListEvent.OnSearch(query)) },
     )
 }
 
@@ -80,6 +95,7 @@ internal fun ClientListScreen(
     onNewClient: () -> Unit,
     onClient: (id: Long) -> Unit,
     onDeleteClient: (id: Long) -> Unit,
+    onSearchClient: (query: String) -> Unit,
 ) {
     Column(modifier = modifier then Modifier.padding(16.dp)) {
         Row(
@@ -105,7 +121,10 @@ internal fun ClientListScreen(
             }
         }
 
-        //TODO: search component
+        SearchClientBar(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp).heightIn(min = 44.dp),
+            onSearch = onSearchClient,
+        )
 
         when (listUiState) {
             is ClientListUiState.Error -> { /*TODO*/ }
@@ -123,10 +142,8 @@ internal fun ClientListScreen(
                         ClientListEmptyState(modifier = Modifier.fillMaxSize())
                     } else {
                         ClientList(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            listUiState = listUiState,
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            clients = clients,
                             onClient = onClient,
                             onDeleteClient = onDeleteClient,
                         )
@@ -135,6 +152,58 @@ internal fun ClientListScreen(
             }
         }
     }
+}
+
+@Composable
+private fun SearchClientBar(
+    modifier: Modifier = Modifier,
+    onSearch: (query: String) -> Unit,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    var searchJob by remember { mutableStateOf<Job?>(null) }
+    var query by remember { mutableStateOf("") }
+
+    BasicTextField(
+        value = query,
+        onValueChange = {
+            query = it
+            searchJob?.cancel() // Cancel any pending search
+            searchJob = coroutineScope.launch {
+                delay(400)
+                onSearch(query)
+            }
+        },
+        singleLine = true,
+        textStyle = TextStyle(
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onBackground,
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { onSearch(query) }),
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = modifier then Modifier
+                    .border(1.dp, Color(0xffE0E0E0), RoundedCornerShape(8.dp))
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search icon",
+                    tint = unselectedColor,
+                )
+
+                Box {
+                    if (query.isEmpty()) {
+                        Text(text = "Pesquisar", color = unselectedColor, fontSize = 16.sp)
+                    }
+                    innerTextField()
+                }
+            }
+        }
+    )
 }
 
 @Composable
@@ -198,7 +267,7 @@ private fun ClientListEmptyState(modifier: Modifier = Modifier) {
 @Composable
 private fun ClientList(
     modifier: Modifier = Modifier,
-    listUiState: ClientListUiState.Success,
+    clients: List<Client>,
     onClient: (id: Long) -> Unit,
     onDeleteClient: (id: Long) -> Unit,
 ) {
@@ -206,7 +275,7 @@ private fun ClientList(
         modifier = modifier,
         contentPadding = PaddingValues(vertical = 4.dp),
     ) {
-        val groupedClients = listUiState.clients.sortedBy { it.name }.groupBy { it.name[0] }
+        val groupedClients = clients.sortedBy { it.name }.groupBy { it.name[0] }
 
         groupedClients.forEach { (char, clients) ->
             stickyHeader {
@@ -304,6 +373,7 @@ private fun PreviewClientListScreen() {
             onNewClient = { },
             onClient = { },
             onDeleteClient = { },
+            onSearchClient = { },
         )
     }
 }

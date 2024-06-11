@@ -10,4 +10,5 @@ sealed interface ClientListUiState {
 
 sealed interface ClientListEvent {
     data class OnDeleteClient(val clientId: Long) : ClientListEvent
+    data class OnSearch(val query: String) : ClientListEvent
 }
