@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -111,10 +110,7 @@ fun ClientDetailRoute(
     }
 
     ClientDetailScreen(
-        modifier = modifier then Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.ime)
-            .windowInsetsPadding(WindowInsets.navigationBars),
+        modifier = modifier then Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.ime),
         screenUiState = screenUiState,
         actionUiState = actionUiState,
         onEvent = viewModel::handleEvents,
@@ -195,7 +191,10 @@ internal fun ClientDetailScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = ButtonBottom,
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 40.dp),
+                contentPadding = PaddingValues(
+                    start = 20.dp, end = 20.dp,
+                    top = 40.dp, bottom = 16.dp
+                ),
             ) {
                 item {
                     FormComponent(
@@ -436,9 +435,7 @@ internal fun ClientDetailScreen(
 
                 item {
                     Button(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                         onClick = { onMainAction() },
                         shape = RoundedCornerShape(8.dp),
                         enabled = !actionUiState.isLoading(),

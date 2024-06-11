@@ -6,10 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -39,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
             MaxProcessTheme {
                 Scaffold(
-                    modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                    modifier = Modifier,
                     snackbarHost = {
                         SnackbarHost(
                             hostState = snackbarHostState,

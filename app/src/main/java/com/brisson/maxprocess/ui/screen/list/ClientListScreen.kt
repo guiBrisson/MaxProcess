@@ -38,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,8 +103,6 @@ internal fun ClientListScreen(
     onDeleteClient: (id: Long) -> Unit,
     onSearchClient: (query: String) -> Unit,
 ) {
-    val coroutineScope = rememberCoroutineScope()
-
     Column(modifier = modifier then Modifier.padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -119,7 +118,9 @@ internal fun ClientListScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
             ) {
                 Icon(
-                    modifier = Modifier.padding(end = 4.dp).size(20.dp),
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .size(20.dp),
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add new client icon",
                 )
@@ -129,13 +130,16 @@ internal fun ClientListScreen(
         }
 
         SearchClientBar(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp).heightIn(min = 44.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+                .heightIn(min = 44.dp),
             onSearch = onSearchClient,
         )
 
         when (listUiState) {
             is ClientListUiState.Error -> {
-                coroutineScope.launch {
+                LaunchedEffect(Unit) {
                     onShowSnackbar(SnackbarProperties(
                         message = "Algo aconteceu na aplicação",
                         title = "Erro interno",
@@ -145,7 +149,9 @@ internal fun ClientListScreen(
             }
 
             ClientListUiState.Loading -> {
-                ClientListLoadingState(modifier = Modifier.fillMaxWidth().weight(1f))
+                ClientListLoadingState(modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f))
             }
 
             is ClientListUiState.Success -> {
@@ -157,7 +163,9 @@ internal fun ClientListScreen(
                         ClientListEmptyState(modifier = Modifier.fillMaxSize())
                     } else {
                         ClientList(
-                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
                             clients = clients,
                             onClient = onClient,
                             onDeleteClient = onDeleteClient,
@@ -290,7 +298,7 @@ private fun ClientList(
         modifier = modifier,
         contentPadding = PaddingValues(vertical = 4.dp),
     ) {
-        val groupedClients = clients.sortedBy { it.name }.groupBy { it.name[0] }
+        val groupedClients = clients.sortedBy { it.name }.groupBy { it.name[0].uppercaseChar() }
 
         groupedClients.forEach { (char, clients) ->
             stickyHeader {
