@@ -1,15 +1,9 @@
 package com.brisson.maxprocess.ui.screen.detail
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,15 +12,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -50,7 +41,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,24 +59,22 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.brisson.maxprocess.domain.model.mockedBrazilStates
+import com.brisson.maxprocess.ui.component.form.FormComponent
+import com.brisson.maxprocess.ui.component.form.FormTextField
 import com.brisson.maxprocess.ui.component.snackbar.SnackbarProperties
 import com.brisson.maxprocess.ui.component.snackbar.SnackbarType
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
-import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
 import com.brisson.maxprocess.ui.util.ButtonBottom
@@ -464,99 +452,6 @@ internal fun ClientDetailScreen(
 }
 
 @Composable
-private fun FormComponent(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    contentDescription: String,
-    unselected: Boolean,
-    hasError: Boolean = false,
-    verticalAlignment: Alignment.Vertical = Alignment.Top,
-    content: @Composable () -> Unit,
-) {
-    val iconTint =
-        if (hasError) errorColor
-        else if (unselected) unselectedColor
-        else MaterialTheme.colorScheme.primary
-
-    Row(
-        modifier = modifier,
-        verticalAlignment = verticalAlignment,
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        Icon(
-            modifier = Modifier.padding(top = 12.dp),
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = iconTint,
-        )
-        content()
-    }
-}
-
-@Composable
-private fun FormTextField(
-    modifier: Modifier = Modifier,
-    label: String,
-    value: String,
-    errorMessage: String? = null,
-    readOnly: Boolean = false,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
-    onValueChange: (String) -> Unit,
-) {
-    Column(
-        modifier = Modifier.heightIn(min = 48.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        BasicTextField(
-            modifier = modifier,
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            textStyle = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground,
-            ),
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            readOnly = readOnly,
-            visualTransformation = visualTransformation,
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    this@Column.AnimatedVisibility(
-                        modifier = Modifier.align(Alignment.CenterStart).offset(y = (-16).dp),
-                        visible = value.isNotEmpty(),
-                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-                    ) {
-                        Text(text = label, color = unselectedColor, fontSize = 12.sp)
-                    }
-
-                    if (value.isEmpty()) Text(text = label, color = unselectedColor, fontSize = 16.sp)
-                    innerTextField()
-                }
-            }
-        )
-        AnimatedVisibility(visible = errorMessage != null) {
-            errorMessage?.let {
-                Text(
-                    text = it,
-                    fontSize = 12.sp,
-                    color = errorColor,
-                    fontWeight = FontWeight.Medium,
-                    lineHeight = 12.sp,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun HandleActionUiState(
     actionUiState: ActionUiState,
     screenUiState: ScreenUiState,
@@ -602,7 +497,6 @@ private fun HandleActionUiState(
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
