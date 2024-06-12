@@ -1,5 +1,7 @@
 package com.brisson.maxprocess.domain.model
 
+import androidx.compose.ui.graphics.Color
+import com.brisson.maxprocess.ui.util.generateRandomPastelColor
 import java.util.Date
 
 data class Client(
@@ -10,6 +12,7 @@ data class Client(
     val birthDate: Date?,
     val uf: String?,
     val phones: List<String>?,
+    val avatarColor: Color,
 ) {
     constructor(
         name: String,
@@ -25,5 +28,6 @@ data class Client(
         birthDate = birthDate,
         uf = uf,
         phones = phones,
+        avatarColor = Color.generateRandomPastelColor(),
     )
 }

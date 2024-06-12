@@ -38,10 +38,18 @@ class ClientRepositoryImpl @Inject constructor(
     }
 
     private fun ClientEntity.toDomain() : Client {
-        return Client(id, name, createdAt, cpf, birthDate, uf, phones)
+        return Client(id, name, createdAt, cpf, birthDate, uf, phones, avatarColor)
     }
 
     private fun Client.toEntity() : ClientEntity {
-        return ClientEntity(id, name, createdAt, cpf, birthDate, uf, phones)
+        // Do not pass the `createdAt` and `avatarColor`, it should be assigned on creation
+        return ClientEntity(
+            id = id,
+            name = name,
+            cpf = cpf,
+            birthDate = birthDate,
+            uf = uf,
+            phones = phones,
+        )
     }
 }

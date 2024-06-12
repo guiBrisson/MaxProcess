@@ -53,11 +53,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -81,6 +84,8 @@ import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
 import com.brisson.maxprocess.ui.util.ButtonBottom
 import com.brisson.maxprocess.ui.util.MaskVisualTransformation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -95,17 +100,26 @@ fun ClientDetailRoute(
     val actionUiState by viewModel.actionUiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.handleEvents(ClientDetailEvent.OnInitialLoad) }
+
     LaunchedEffect(actionUiState) {
         if (actionUiState.isSuccess()) {
             onBack()
-            onShowSnackbar(
-                SnackbarProperties(
+            val snackbarProps = when (screenUiState) {
+                is ScreenUiState.EditClient -> SnackbarProperties(
+                    title = "Editado com Sucesso",
+                    message = "As informações foram atualizadas",
+                    type = SnackbarType.SUCCESS,
+                    actionLabel = "OK",
+                )
+                ScreenUiState.NewClient -> SnackbarProperties(
                     title = "Criado com Sucesso",
                     message = "Novo cliente adicionado",
                     type = SnackbarType.SUCCESS,
                     actionLabel = "OK",
                 )
-            )
+                else -> null
+            }
+            snackbarProps?.let { props -> onShowSnackbar(props) }
         }
     }
 
@@ -129,7 +143,9 @@ internal fun ClientDetailScreen(
 ) {
     var ufDropdownExpanded by remember { mutableStateOf(false) }
     val toggleUfDropdown: () -> Unit = { ufDropdownExpanded = !ufDropdownExpanded }
+    val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
 
     var clientName by remember { mutableStateOf("") }
     var clientBirthDate by remember { mutableStateOf("") }
@@ -360,8 +376,13 @@ internal fun ClientDetailScreen(
                                             )
                                         }
                                     }
+                                    
+                                    val formModifier = if (index == clientPhones.lastIndex) {
+                                        Modifier.focusRequester(focusRequester)
+                                    } else Modifier
 
                                     FormTextField(
+                                        modifier = formModifier,
                                         label = "Telefone",
                                         value = phone,
                                         onValueChange = {
@@ -384,7 +405,13 @@ internal fun ClientDetailScreen(
                             }
 
                             TextButton(
-                                onClick = { clientPhones.add("") },
+                                onClick = {
+                                    coroutineScope.launch {
+                                        clientPhones.add("")
+                                        delay(100) // give time to create a new form field
+                                        focusRequester.requestFocus()
+                                    }
+                                },
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = unselectedColor,
                                 ),
@@ -449,9 +476,7 @@ internal fun ClientDetailScreen(
 
                         if (actionUiState.isLoading()) {
                             CircularProgressIndicator(
-                                modifier = Modifier
-                                    .padding(end = 8.dp)
-                                    .size(16.dp),
+                                modifier = Modifier.padding(end = 8.dp).size(16.dp),
                                 color = Color.Gray.copy(alpha = 0.5f),
                                 strokeWidth = 3.dp,
                                 strokeCap = StrokeCap.Round,

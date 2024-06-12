@@ -55,6 +55,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,7 +69,6 @@ import com.brisson.maxprocess.ui.theme.MaxProcessTheme
 import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
-import com.brisson.maxprocess.ui.util.generateRandomPastelColor
 import com.brisson.maxprocess.ui.util.shimmerEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -323,14 +323,12 @@ private fun ClientList(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val containerColor = generateRandomPastelColor()
-
                     Box(
                         modifier = Modifier
                             .padding(end = 12.dp)
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(containerColor),
+                            .background(client.avatarColor),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -345,6 +343,8 @@ private fun ClientList(
                         modifier = Modifier.weight(1f),
                         text = client.name,
                         fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     IconButton(onClick = toggleMenu) {
