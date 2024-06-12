@@ -1,6 +1,11 @@
 package com.brisson.maxprocess.ui.screen.detail
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -13,12 +18,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -80,6 +86,7 @@ import com.brisson.maxprocess.domain.model.mockedBrazilStates
 import com.brisson.maxprocess.ui.component.snackbar.SnackbarProperties
 import com.brisson.maxprocess.ui.component.snackbar.SnackbarType
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
+import com.brisson.maxprocess.ui.theme.errorColor
 import com.brisson.maxprocess.ui.theme.lightStrokeColor
 import com.brisson.maxprocess.ui.theme.unselectedColor
 import com.brisson.maxprocess.ui.util.ButtonBottom
@@ -101,27 +108,7 @@ fun ClientDetailRoute(
 
     LaunchedEffect(Unit) { viewModel.handleEvents(ClientDetailEvent.OnInitialLoad) }
 
-    LaunchedEffect(actionUiState) {
-        if (actionUiState.isSuccess()) {
-            onBack()
-            val snackbarProps = when (screenUiState) {
-                is ScreenUiState.EditClient -> SnackbarProperties(
-                    title = "Editado com Sucesso",
-                    message = "As informações foram atualizadas",
-                    type = SnackbarType.SUCCESS,
-                    actionLabel = "OK",
-                )
-                ScreenUiState.NewClient -> SnackbarProperties(
-                    title = "Criado com Sucesso",
-                    message = "Novo cliente adicionado",
-                    type = SnackbarType.SUCCESS,
-                    actionLabel = "OK",
-                )
-                else -> null
-            }
-            snackbarProps?.let { props -> onShowSnackbar(props) }
-        }
-    }
+    HandleActionUiState(actionUiState, screenUiState, onShowSnackbar, onBack)
 
     ClientDetailScreen(
         modifier = modifier then Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.ime),
@@ -213,16 +200,19 @@ internal fun ClientDetailScreen(
                 ),
             ) {
                 item {
+                    val errorMessage = actionUiState.formError<FormError.NameError>()
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         icon = Icons.Outlined.Person,
                         contentDescription = "Person icon",
                         unselected = clientName.isEmpty(),
+                        hasError = (errorMessage != null),
                     ) {
                         FormTextField(
                             label = "Nome",
                             value = clientName,
                             onValueChange = { clientName = it },
+                            errorMessage = errorMessage?.message,
                             keyboardOptions = KeyboardOptions(
                                 capitalization = KeyboardCapitalization.Words,
                                 imeAction = ImeAction.Next,
@@ -236,11 +226,14 @@ internal fun ClientDetailScreen(
 
                 item {
                     val dateMask = MaskVisualTransformation("##/##/####")
+                    val errorMessage = actionUiState.formError<FormError.BirthDateError>()
+
                     FormComponent(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         icon = Icons.Outlined.DateRange,
                         contentDescription = "Date icon",
                         unselected = clientBirthDate.isEmpty(),
+                        hasError = (errorMessage != null),
                     ) {
                         FormTextField(
                             label = "Data de nascimento",
@@ -248,6 +241,7 @@ internal fun ClientDetailScreen(
                             onValueChange = {
                                 if (it.length <= 8) clientBirthDate = it
                             },
+                            errorMessage = errorMessage?.message,
                             visualTransformation = dateMask,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
@@ -265,7 +259,7 @@ internal fun ClientDetailScreen(
                     FormComponent(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 14.dp)
+                            .padding(vertical = 8.dp)
                             .clickable(
                                 interactionSource = interactionSource,
                                 indication = null,
@@ -322,16 +316,20 @@ internal fun ClientDetailScreen(
 
                 item {
                     val cpfMask = MaskVisualTransformation("###.###.###-##")
+                    val errorMessage = actionUiState.formError<FormError.CPFError>()
+
                     FormComponent(
-                        modifier = Modifier.padding(vertical = 14.dp).fillMaxWidth(),
+                        modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
                         icon = Icons.Outlined.AccountBox,
                         contentDescription = "AccountBox icon",
                         unselected = clientCPF.isEmpty(),
+                        hasError = (errorMessage != null),
                     ) {
                         FormTextField(
                             label = "CPF",
                             value = clientCPF,
                             onValueChange = { if (it.length <= 11) clientCPF = it },
+                            errorMessage = errorMessage?.message,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
                                 imeAction = ImeAction.Next,
@@ -349,7 +347,7 @@ internal fun ClientDetailScreen(
                     val phone9DigitsMask = MaskVisualTransformation("(##) # ####-####")
 
                     FormComponent(
-                        modifier = Modifier.padding(vertical = 14.dp).fillMaxWidth(),
+                        modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
                         icon = Icons.Outlined.Phone,
                         contentDescription = "Phone icon",
                         verticalAlignment = Alignment.Top,
@@ -433,33 +431,6 @@ internal fun ClientDetailScreen(
                     }
                 }
 
-                // TODO: maybe implement it in a better way?
-                when (actionUiState) {
-                    is ActionUiState.Errors -> {
-                        item {
-                            Text(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                fontWeight = FontWeight.SemiBold,
-                                text = "Por favor corrija o seguinte:",
-                                color = Color.Red,
-                            )
-                        }
-
-                        items(actionUiState.errorMessages) { error ->
-                            Text(
-                                modifier = Modifier
-                                    .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
-                                text = "• $error",
-                                fontWeight = FontWeight.Normal,
-                                color = Color.Red,
-                            )
-                        }
-                    }
-
-                    else -> Unit
-                }
-
-
                 item {
                     Button(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -498,16 +469,22 @@ private fun FormComponent(
     icon: ImageVector,
     contentDescription: String,
     unselected: Boolean,
-    verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
+    hasError: Boolean = false,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: @Composable () -> Unit,
 ) {
-    val iconTint = if (unselected) unselectedColor else MaterialTheme.colorScheme.primary
+    val iconTint =
+        if (hasError) errorColor
+        else if (unselected) unselectedColor
+        else MaterialTheme.colorScheme.primary
+
     Row(
         modifier = modifier,
         verticalAlignment = verticalAlignment,
         horizontalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Icon(
+            modifier = Modifier.padding(top = 12.dp),
             imageVector = icon,
             contentDescription = contentDescription,
             tint = iconTint,
@@ -521,37 +498,111 @@ private fun FormTextField(
     modifier: Modifier = Modifier,
     label: String,
     value: String,
+    errorMessage: String? = null,
     readOnly: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     onValueChange: (String) -> Unit,
 ) {
-    BasicTextField(
-        modifier = modifier,
-        value = value,
-        onValueChange = onValueChange,
-        singleLine = true,
-        textStyle = TextStyle(
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground,
-        ),
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
-        readOnly = readOnly,
-        visualTransformation = visualTransformation,
-        decorationBox = { innerTextField ->
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                if (value.isEmpty()) Text(text = label, color = unselectedColor, fontSize = 16.sp)
-                innerTextField()
+    Column(
+        modifier = Modifier.heightIn(min = 48.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        BasicTextField(
+            modifier = modifier,
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground,
+            ),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            readOnly = readOnly,
+            visualTransformation = visualTransformation,
+            decorationBox = { innerTextField ->
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    this@Column.AnimatedVisibility(
+                        modifier = Modifier.align(Alignment.CenterStart).offset(y = (-16).dp),
+                        visible = value.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+                    ) {
+                        Text(text = label, color = unselectedColor, fontSize = 12.sp)
+                    }
+
+                    if (value.isEmpty()) Text(text = label, color = unselectedColor, fontSize = 16.sp)
+                    innerTextField()
+                }
+            }
+        )
+        AnimatedVisibility(visible = errorMessage != null) {
+            errorMessage?.let {
+                Text(
+                    text = it,
+                    fontSize = 12.sp,
+                    color = errorColor,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 12.sp,
+                )
             }
         }
-    )
+    }
 }
+
+@Composable
+private fun HandleActionUiState(
+    actionUiState: ActionUiState,
+    screenUiState: ScreenUiState,
+    onShowSnackbar: suspend (SnackbarProperties) -> Boolean,
+    onBack: () -> Unit
+) {
+    LaunchedEffect(actionUiState) {
+        when (actionUiState) {
+            is ActionUiState.Errors -> {
+                onShowSnackbar(
+                    SnackbarProperties(
+                        title = "Error",
+                        message = "Ocorreu um erro interno ao salvar",
+                        type = SnackbarType.ERROR,
+                        actionLabel = "OK",
+                    )
+                )
+            }
+
+            ActionUiState.Saved -> {
+                onBack()
+                val snackbarProps = when (screenUiState) {
+                    is ScreenUiState.EditClient -> SnackbarProperties(
+                        title = "Editado com Sucesso",
+                        message = "As informações foram atualizadas",
+                        type = SnackbarType.SUCCESS,
+                        actionLabel = "OK",
+                    )
+
+                    ScreenUiState.NewClient -> SnackbarProperties(
+                        title = "Criado com Sucesso",
+                        message = "Novo cliente adicionado",
+                        type = SnackbarType.SUCCESS,
+                        actionLabel = "OK",
+                    )
+
+                    else -> null
+                }
+                snackbarProps?.let { props -> onShowSnackbar(props) }
+            }
+
+            else -> Unit
+        }
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable

@@ -24,12 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brisson.maxprocess.ui.theme.MaxProcessTheme
+import com.brisson.maxprocess.ui.theme.errorColor
+import com.brisson.maxprocess.ui.theme.successColor
 
 @Composable
 fun BaseSnackbar(
@@ -47,8 +48,8 @@ fun BaseSnackbar(
         verticalAlignment = Alignment.Top,
     ) {
         val colorType = when (customProperties.type) {
-            SnackbarType.SUCCESS -> Color(0xff58BD7D)
-            SnackbarType.ERROR -> Color(0xffD55655)
+            SnackbarType.SUCCESS -> successColor
+            SnackbarType.ERROR -> errorColor
         }
 
         Box(

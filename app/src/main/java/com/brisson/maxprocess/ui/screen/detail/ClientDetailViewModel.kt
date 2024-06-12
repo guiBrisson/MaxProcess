@@ -61,32 +61,31 @@ class ClientDetailViewModel @Inject constructor(
         phones: List<String>?,
     ) {
         _actionUiState.value = ActionUiState.Loading
-        val errorMessages = mutableListOf<String>()
+        val errorMessages = mutableListOf<FormError>()
 
         // validate name
-        if (name.isBlank()) errorMessages.add("Nome é obrigatório")
+        if (name.isBlank()) errorMessages.add(FormError.NameError("Nome é obrigatório"))
 
         // validate the birthDate
         val formattedBirthDate: Date? = if (!birthDate.isNullOrEmpty()) {
-            parseBirthDate(birthDate) { error -> errorMessages.add(error) }
+            parseBirthDate(birthDate) { error -> errorMessages.add(FormError.BirthDateError(error)) }
         } else null
-
 
         // enforce the CPF when UF is SP
         if (uf == "SP" && cpf.isNullOrEmpty()) {
-            errorMessages.add("CPF é obrigatório para clientes de SP")
+            errorMessages.add(FormError.CPFError("CPF é obrigatório para clientes de SP"))
         }
 
         // enforce over 18 year old only when UF is MG
         val eighteenYearsAgo = Calendar.getInstance().apply { add(Calendar.YEAR, -18) }
         val ofLegalAge = formattedBirthDate?.after(eighteenYearsAgo.time) == false
         if (uf == "MG" && (formattedBirthDate == null || !ofLegalAge)) {
-            errorMessages.add("Clientes de MG devem ter no mínimo 18 anos")
+            errorMessages.add(FormError.BirthDateError("Clientes de MG devem ter no mínimo 18 anos"))
         }
 
         // if there are any errors, update the UI state with the error messages and early return
         if (errorMessages.isNotEmpty()) {
-            _actionUiState.value = ActionUiState.Errors(errorMessages)
+            _actionUiState.value = ActionUiState.FormErrors(errorMessages)
             return
         }
 
@@ -109,7 +108,7 @@ class ClientDetailViewModel @Inject constructor(
             _actionUiState.value = if (id != null) {
                 ActionUiState.Saved
             } else {
-                ActionUiState.Errors(listOf("Erro interno ao salvar o cliente"))
+                ActionUiState.Errors("Erro interno ao salvar o cliente")
             }
         }
     }

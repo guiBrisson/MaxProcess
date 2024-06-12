@@ -1,6 +1,5 @@
 package com.brisson.maxprocess.ui.screen.detail
 
-import android.provider.Telephony.MmsSms.PendingMessages
 import com.brisson.maxprocess.domain.model.Client
 
 /**
@@ -23,10 +22,10 @@ sealed interface ActionUiState {
     data object Idle : ActionUiState
     data object Loading : ActionUiState
     data object Saved : ActionUiState
-    data class Errors(val errorMessages: List<String>) : ActionUiState
+    data class Errors(val errorMessage: String) : ActionUiState
+    data class FormErrors(val formErrors: List<FormError>) : ActionUiState
 
     fun isLoading(): Boolean = this is Loading
-    fun isSuccess(): Boolean = this is Saved
 }
 
 sealed interface ClientDetailEvent {
@@ -39,4 +38,24 @@ sealed interface ClientDetailEvent {
     ): ClientDetailEvent
 
     data object OnInitialLoad : ClientDetailEvent
+}
+
+/**
+Each one represents a field that can have an error.
+**/
+sealed class FormError(open val message: String) {
+    data class NameError(override val message: String) : FormError(message)
+    data class BirthDateError(override val message: String) : FormError(message)
+    data class CPFError(override val message: String) : FormError(message)
+}
+
+// helper function to get the error from the form errors
+inline fun <reified T : FormError> ActionUiState.formError(): FormError? {
+    val errorMessage = when (this) {
+        is ActionUiState.FormErrors -> {
+            formErrors.find { it is T }
+        }
+        else -> null
+    }
+    return errorMessage
 }
