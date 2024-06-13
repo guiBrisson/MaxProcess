@@ -28,7 +28,8 @@ are used to add clients. This app is my take on the challenge proposed by [MaxPr
 
 ## Project Structure
 This project has only one module because it only has one feature. This is because the feature is small and does
-not require a lot of code. If we were to expand the app and add more features, we would need to create more modules 
+not require a lot of code. To ensure a robust and scalable architecture I adopt the Model-View-Intent (MVI) pattern.
+If we were to expand the app and add more features, we would need to create more modules 
 with UseCases. This would help to keep the code organized and maintainable.
 
 For example, we might create a new module for each new feature, such as a "settings" module or a "profile"
